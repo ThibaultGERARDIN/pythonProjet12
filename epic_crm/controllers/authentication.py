@@ -6,6 +6,7 @@ from models.users import User
 from dotenv import load_dotenv
 import sqlalchemy
 from sqlalchemy.orm import Session
+from .database_controller import SessionLocal
 
 
 load_dotenv()
@@ -38,6 +39,19 @@ def decode_token(token: str):
         return None
     except jwt.InvalidTokenError:
         return None
+
+
+def authenticate_user(email, password):
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter_by(email=email).first()
+        if user and verify_password(password, user.hashed_password):
+            token = create_access_token({"user_id": user.id, "email": user.email, "role": user.role})
+            return True, token
+        else:
+            return False, "Email ou mot de passe incorrect."
+    finally:
+        db.close()
 
 
 def get_current_user_token_payload():

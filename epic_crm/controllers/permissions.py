@@ -14,10 +14,9 @@ def resolve_permission(roles: List[Department], function, *args, **kwargs):
 
     session: Session = SessionLocal()
     try:
-        request = sqlalchemy.select(User).where(User.id == user_id)
-        user = session.scalar(request)
+        user = session.get(User, user_id)
 
-        if not user or user.department not in roles:
+        if not user or user.role not in roles:
             raise PermissionError(REJECT_MESSAGE)
 
         return function(*args, **kwargs)

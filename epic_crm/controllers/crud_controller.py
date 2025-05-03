@@ -6,9 +6,9 @@ from abc import ABC, abstractmethod
 from sentry_sdk import capture_message
 
 from controllers import authentication as auth
-from controller.permissions import permission_required
-from controller.cascade import CascadeDetails, CascadeResolver
-from controller import utils
+from controllers.permissions import permission_required
+from controllers.cascade_controller import CascadeDetails, CascadeResolver
+from controllers import utils
 from models.users import Department, User
 from models.clients import Client
 from models.contracts import Contract
@@ -115,7 +115,8 @@ class UserManager(BaseManager):
         updated_users = self._session.scalars(request)
 
         capture_message(
-            message=f"user {auth.get_current_user_token_payload()["user_id"]} : updated users : {[user.id for user in updated_users]}",
+            message=f"user {auth.get_current_user_token_payload()["user_id"]}"
+            f" : updated users : {[user.id for user in updated_users]}",
         )
 
     @permission_required(roles=[Department.ACCOUNTING])
@@ -160,14 +161,21 @@ class ClientsManager(BaseManager):
     def get_all(self) -> List[Client]:
         return super().get_all()
 
+    @permission_required([Department.SALES])
+    def get_my_clients(self) -> List[Client]:
+        user = self.get_authenticated_user()
+        return self.get(Client.sales_contact_id == user.id)
+
     @permission_required(roles=[Department.SALES])
     def update(self, where_clause, **values):
 
-        if "sales_contact_id" in values:
-            sales_contact = self._session.scalar(sqlalchemy.select(User).where(User.id == values["sales_contact_id"]))
+        user = self.get_authenticated_user()
 
-            if sales_contact.department != Department.SALES:
-                raise ValueError("Sales contact must be part of sales department")
+        if user.role == Department.SALES:
+            clients = self.get(where_clause)
+            for client in clients:
+                if client.sales_contact_id != user.id:
+                    raise PermissionError("Permission denied: not your client.")
 
         return super().update(where_clause, **values)
 
@@ -211,11 +219,31 @@ class ContractsManager(BaseManager):
         return super().get_all()
 
     @permission_required(roles=[Department.ACCOUNTING, Department.SALES])
+    def get_unsigned_contracts(self):
+        return self.get(Contract.is_signed is False)
+
+    @permission_required(roles=[Department.ACCOUNTING, Department.SALES])
+    def get_unpaid_contracts(self):
+        return self.get(Contract.to_be_paid > 0)
+
+    @permission_required(roles=[Department.ACCOUNTING, Department.SALES])
     def update(self, where_clause, **values):
+        user = self.get_authenticated_user()
+        if user.role == Department.SALES:
+            accessed_contracts = self.get(where_clause)
+            for contract in accessed_contracts:
+                if contract.sales_contact_id != user.id:
+                    raise PermissionError("Permission denied: not responsible for this contract.")
         return super().update(where_clause, **values)
 
     @permission_required(roles=[Department.ACCOUNTING, Department.SALES])
     def delete(self, where_clause):
+        user = self.get_authenticated_user()
+        if user.role == Department.SALES:
+            accessed_contracts = self.get(where_clause)
+            for contract in accessed_contracts:
+                if contract.sales_contact_id != user.id:
+                    raise PermissionError("Permission denied: not responsible for this contract.")
         return super().delete(where_clause)
 
     def resolve_cascade(self, contracts: List[Contract]) -> List[CascadeDetails]:
@@ -242,10 +270,18 @@ class EventsManager(BaseManager):
         support_contact_id=int,
     ):
 
-        support_user = self._session.scalar(sqlalchemy.select(User).where(User.id == support_contact_id))
+        support_user = self._session.get(User, support_contact_id)
+        utils.check_user_role(support_user, Department.SUPPORT)
 
-        if support_user.department != Department.SUPPORT:
-            raise ValueError("The support_contact_id must be a support Employee.")
+        # Récupérer le contrat
+        contract = self._session.get(Contract, contract_id)
+        if not contract or not contract.is_signed:
+            raise ValueError("Contract must exist and be signed.")
+
+        # Vérifier que le client appartient au sales actuel
+        user = self.get_authenticated_user()
+        if contract.sales_contact_id != user.id:
+            raise PermissionError("Permission denied: not your contract.")
 
         return super().create(
             Event(
@@ -267,37 +303,39 @@ class EventsManager(BaseManager):
     def get_all(self) -> List[Event]:
         return super().get_all()
 
+    @permission_required([Department.SUPPORT])
+    def get_my_events(self) -> List[Event]:
+        user = self.get_authenticated_user()
+        return self.get(Event.support_contact_id == user.id)
+
+    def get_unassigned_support_events(self) -> List[Event]:
+        return self.get(Event.support_contact_id is None)
+
     @permission_required([Department.ACCOUNTING, Department.SUPPORT])
     def update(self, where_clause, **values):
 
-        user = auth.retrieve_authenticated_user(self._session)
+        user = self.get_authenticated_user()
         accessed_objects = self.get(where_clause)
 
-        # check that support employee own the accessed events
-        if user.department == Department.SUPPORT:
+        if user.role == Department.SUPPORT:
             for event in accessed_objects:
                 if event.support_contact_id != user.id:
                     raise PermissionError(f"Permission denied. Not authorized to update event {event.id}")
 
-        # Chech that support_contact is a support employee
         if "support_contact_id" in values:
-            support_contact = self._session.scalar(
-                sqlalchemy.select(User).where(User.id == values["support_contact_id"])
-            )
-
-            if support_contact.department != Department.SUPPORT:
-                raise ValueError("support_contact_id must be a support employee")
+            support_contact = self._session.get(User, values["support_contact_id"])
+            utils.check_user_role(support_contact, Department.SUPPORT)
 
         return super().update(where_clause, **values)
 
     @permission_required([Department.ACCOUNTING, Department.SUPPORT])
     def delete(self, where_clause):
 
-        user = auth.retrieve_authenticated_user(self._session)
+        user = self.get_authenticated_user()
         accessed_objects = self.get(where_clause)
 
         # check that support employee own the accessed events
-        if user.department == Department.SUPPORT:
+        if user.role == Department.SUPPORT:
             for event in accessed_objects:
                 if event.support_contact_id != user.id:
                     raise PermissionError(f"Permission denied. Not authorized to update event {event.id}")
