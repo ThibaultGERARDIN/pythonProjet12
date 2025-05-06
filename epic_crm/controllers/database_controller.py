@@ -8,7 +8,7 @@ load_dotenv()
 
 DATABASE_USER = os.getenv("DATABASE_USER")
 DATABASE_PWD = os.getenv("DATABASE_PWD")
-
+SENTRY_KEY = os.getenv("SENTRY_KEY")
 
 engine = create_engine(f"mysql+pymysql://{DATABASE_USER}:{DATABASE_PWD}@localhost:3306/epic_crm")
 

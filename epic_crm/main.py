@@ -4,6 +4,8 @@ from models.base import Base
 from views.user_view import create_user_cmd, login, current_user
 from views.client_view import client
 from views.contract_view import contract
+from views.event_view import event
+from views.admin_view import create_admin, reset_db, delete_users
 
 
 @click.group()
@@ -17,6 +19,10 @@ cli.add_command(login)
 cli.add_command(current_user)
 cli.add_command(client)
 cli.add_command(contract)
+cli.add_command(event)
+cli.add_command(reset_db)
+cli.add_command(delete_users)
+cli.add_command(create_admin)
 
 
 @cli.command()

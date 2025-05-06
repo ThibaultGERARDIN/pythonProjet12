@@ -76,6 +76,16 @@ class UserManager(BaseManager):
     def get_all(self):
         return super().get_all()
 
+    def _create_admin_raw(self, firstname, lastname, email, password):
+        user = User(
+            first_name=firstname,
+            last_name=lastname,
+            email=email,
+            hashed_password=auth.hash_password(password),
+            role=Department.ACCOUNTING,
+        )
+        return super().create(user)
+
     @permission_required(roles=[Department.ACCOUNTING])
     def create(self, firstname: str, lastname: str, email: str, password: str, role: Department):
         new_user = User(
@@ -85,8 +95,6 @@ class UserManager(BaseManager):
             hashed_password=auth.hash_password(password),
             role=role,
         )
-
-        new_user.set_password(password)
 
         created_user = super().create(new_user)
 

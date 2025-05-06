@@ -1,6 +1,7 @@
 import click
-from controllers.contract_controller import create_contract, list_contracts, update_contract, delete_contract
-from controllers.authentication import get_current_user_token_payload
+from controllers.crud_controller import ContractsManager
+from controllers.utils import get_manager
+from models.contracts import Contract
 
 
 @click.group()
@@ -15,23 +16,27 @@ def contract():
 @click.option("--amount-remaining", prompt=True, type=float)
 @click.option("--is-signed", type=bool, prompt="Contrat signé ? (True/False)")
 def create(client_id, amount_total, amount_remaining, is_signed):
-    user = get_current_user_token_payload()
-    success, msg = create_contract(
-        client_id=client_id,
-        sales_contact_id=user["user_id"],
-        amount_total=amount_total,
-        amount_remaining=amount_remaining,
-        is_signed=is_signed,
-    )
-    click.echo(msg)
+    manager, session = get_manager(ContractsManager)
+    try:
+        contract = manager.create(client_id, amount_total, amount_remaining, is_signed)
+        click.secho(f"Contrat créé avec ID : {contract.id}", fg="green")
+    except Exception as e:
+        click.secho(str(e), fg="red")
+    finally:
+        session.close()
 
 
 @contract.command()
 def list():
-    contracts = list_contracts()
-    for c in contracts:
-        signed = "Oui" if c.is_signed else "Non"
-        click.echo(f"[{c.id}] Client #{c.client_id} - Total: {c.amount_total}€ - Signé: {signed}")
+    manager, session = get_manager(ContractsManager)
+    try:
+        contracts = manager.get_all()
+        for c in contracts:
+            click.echo(
+                f"[{c.id}] Client #{c.client_id} - Total: {c.total_amount}€ - Signé: {'Oui' if c.is_signed else 'Non'}"
+            )
+    finally:
+        session.close()
 
 
 @contract.command()
@@ -40,14 +45,24 @@ def list():
 @click.option("--amount-remaining", type=float, default=None)
 @click.option("--is-signed", type=bool, default=None)
 def update(contract_id, amount_total, amount_remaining, is_signed):
-    success, msg = update_contract(
-        int(contract_id), amount_total=amount_total, amount_remaining=amount_remaining, is_signed=is_signed
-    )
-    click.echo(msg)
+    manager, session = get_manager(ContractsManager)
+    try:
+        manager.update(
+            Contract.id == int(contract_id), total_amount=amount_total, to_be_paid=amount_remaining, is_signed=is_signed
+        )
+        click.secho("Contrat mis à jour.", fg="green")
+    except Exception as e:
+        click.secho(str(e), fg="red")
+    finally:
+        session.close()
 
 
 @contract.command()
 @click.option("--contract-id", prompt="ID du contrat")
 def delete(contract_id):
-    success, msg = delete_contract(int(contract_id))
-    click.echo(msg)
+    manager, session = get_manager(ContractsManager)
+    try:
+        manager.delete(Contract.id == int(contract_id))
+        click.secho(f"Contrat {contract_id} supprimé.", fg="yellow")
+    finally:
+        session.close()

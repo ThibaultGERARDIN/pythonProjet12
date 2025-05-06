@@ -53,6 +53,7 @@ class Client(Base):
         "User",
         cascade="all,delete",
     )
+    events = relationship("Event", back_populates="client", cascade="all, delete-orphan")
 
     HEADERS = (
         "id",

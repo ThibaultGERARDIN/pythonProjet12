@@ -1,6 +1,7 @@
 import bcrypt
 import jwt
 import os
+import click
 from datetime import datetime, timedelta
 from models.users import User
 from dotenv import load_dotenv
@@ -23,6 +24,18 @@ def verify_password(password, hashed):
 SECRET_KEY = os.getenv("SECRET_KEY", "super-secret-key")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
+MASTER_PASSWORD = os.getenv("MASTER_PASSWORD")
+
+
+def require_master_password(function):
+    def wrapper(*args, **kwargs):
+        pwd = click.prompt("Mot de passe administrateur", hide_input=True)
+        if pwd != MASTER_PASSWORD:
+            click.secho("Mot de passe incorrect. Accès refusé.", fg="red")
+            return
+        return function(*args, **kwargs)
+
+    return wrapper
 
 
 def create_access_token(data: dict):
@@ -46,7 +59,7 @@ def authenticate_user(email, password):
     try:
         user = db.query(User).filter_by(email=email).first()
         if user and verify_password(password, user.hashed_password):
-            token = create_access_token({"user_id": user.id, "email": user.email, "role": user.role})
+            token = create_access_token({"user_id": user.id, "email": user.email, "role": user.role.name})
             return True, token
         else:
             return False, "Email ou mot de passe incorrect."
@@ -57,7 +70,7 @@ def authenticate_user(email, password):
 def get_current_user_token_payload():
     """
     Payload returned :
-    {"user_id": user.id, "email": user.email, "role": user.role}
+    {"user_id": user.id, "email": user.email, "role": user.role.name}
     """
     try:
         with open(".token", "r") as f:

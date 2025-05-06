@@ -1,5 +1,6 @@
 import re
 from models.users import User, Department
+from controllers.database_controller import SessionLocal
 
 
 def validate_email(email: str):
@@ -27,3 +28,11 @@ def check_user_role(user: User, expected_role: Department):
     """
     if user.role != expected_role:
         raise ValueError(f"The user must have role '{expected_role.name}'.")
+
+
+def get_manager(manager_class):
+    """
+    Récupère le manageur nécessaire, et la session en cours.
+    """
+    session = SessionLocal()
+    return manager_class(session), session

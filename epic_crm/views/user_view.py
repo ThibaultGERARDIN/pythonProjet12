@@ -1,6 +1,8 @@
 import click
-from controllers.user_controller import create_user, authenticate_user
 from controllers.authentication import get_current_user_token_payload
+from controllers.crud_controller import UserManager
+from controllers.utils import get_manager
+from models.users import Department
 
 
 @click.command()
@@ -8,27 +10,31 @@ from controllers.authentication import get_current_user_token_payload
 @click.option("--lastname", prompt="Nom")
 @click.option("--email", prompt="Email")
 @click.option("--password", prompt=True, hide_input=True, confirmation_prompt=True)
-@click.option("--role", type=click.Choice(["gestion", "commercial", "support"]), prompt="Rôle")
+@click.option("--role", type=click.Choice(["accounting", "sales", "support"]), prompt="Rôle")
 def create_user_cmd(firstname, lastname, email, password, role):
     """Créer un utilisateur (via CLI)."""
-    success, message = create_user(firstname, lastname, email, password, role)
-    if success:
-        click.echo(f"{message}")
-    else:
-        click.echo(f"{message}")
+    manager, session = get_manager(UserManager)
+    try:
+        role_enum = Department[role.upper()]
+        user = manager.create(firstname, lastname, email, password, role_enum)
+        click.secho(f"Utilisateur {user.email} créé (ID: {user.id})", fg="green")
+    except Exception as e:
+        click.secho(str(e), fg="red")
+    finally:
+        session.close()
 
 
 @click.command()
 @click.option("--email", prompt="Email")
 @click.option("--password", prompt=True, hide_input=True)
-@click.option("--save-token", is_flag=True, help="Sauvegarder le token localement")
+@click.option("--save-token/--no-save-token", default=True, help="Sauvegarder le token dans .token (activé par défaut)")
 def login(email, password, save_token):
-    """Connexion utilisateur avec token JWT."""
+    from controllers.authentication import authenticate_user
+
     success, token_or_msg = authenticate_user(email, password)
     if success:
         click.secho("Connexion réussie. Token JWT généré.", fg="green")
         click.echo(token_or_msg)
-
         if save_token:
             with open(".token", "w") as f:
                 f.write(token_or_msg)

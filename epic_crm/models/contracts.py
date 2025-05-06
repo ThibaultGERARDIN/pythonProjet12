@@ -51,7 +51,7 @@ class Contract(Base):
         cascade="all,delete",
     )
 
-    events = relationship("Event", back_populates="contracts", cascade="all, delete-orphan")
+    events = relationship("Event", back_populates="contract", cascade="all, delete-orphan")
 
     HEADERS = (
         "id",
