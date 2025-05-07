@@ -54,6 +54,7 @@ class Client(Base):
         cascade="all,delete",
     )
     events = relationship("Event", back_populates="client", cascade="all, delete-orphan")
+    contracts = relationship("Contract", back_populates="client")
 
     HEADERS = (
         "id",

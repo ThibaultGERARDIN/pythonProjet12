@@ -206,12 +206,20 @@ class ContractsManager(BaseManager):
     def __init__(self, session: Session) -> None:
         super().__init__(session=session, model=Contract)
 
-    @permission_required(roles=[Department.ACCOUNTING])
+    @permission_required(roles=[Department.ACCOUNTING, Department.SALES])
     def create(self, client_id: int, total_amount: float, to_be_paid: int, is_signed: bool):
+        user = self.get_authenticated_user()
+
+        client = self._session.get(Client, client_id)
+        if not client:
+            raise ValueError("Client non trouvé.")
+        if client.sales_contact_id != user.id:
+            raise PermissionError("Ce client ne vous est pas assigné.")
+
         return super().create(
             Contract(
                 client_id=client_id,
-                sales_contact_id=auth.get_current_user_token_payload()["user_id"],
+                sales_contact_id=client.sales_contact_id,
                 total_amount=total_amount,
                 to_be_paid=to_be_paid,
                 is_signed=is_signed,
@@ -269,10 +277,11 @@ class EventsManager(BaseManager):
     @permission_required([Department.SALES])
     def create(
         self,
+        event_name: str,
         start_date=datetime,
         end_date=datetime,
         location=str,
-        attendees_count=int,
+        attendees=int,
         notes=str,
         contract_id=int,
         support_contact_id=int,
@@ -286,6 +295,7 @@ class EventsManager(BaseManager):
         if not contract or not contract.is_signed:
             raise ValueError("Contract must exist and be signed.")
 
+        client_id = contract.client_id
         # Vérifier que le client appartient au sales actuel
         user = self.get_authenticated_user()
         if contract.sales_contact_id != user.id:
@@ -293,13 +303,15 @@ class EventsManager(BaseManager):
 
         return super().create(
             Event(
+                event_name=event_name,
                 start_date=start_date,
                 end_date=end_date,
                 location=location,
-                attendees_count=attendees_count,
+                attendees=attendees,
                 notes=notes,
                 contract_id=contract_id,
                 support_contact_id=support_contact_id,
+                client_id=client_id,
             )
         )
 

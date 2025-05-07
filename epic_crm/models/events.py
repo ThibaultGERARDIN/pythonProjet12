@@ -1,6 +1,5 @@
 from .base import Base
 from sqlalchemy.orm import relationship
-from sqlalchemy.sql import func
 from sqlalchemy import (
     Column,
     Integer,
@@ -39,6 +38,10 @@ class Event(Base):
     contract = relationship("Contract", back_populates="events")
     client = relationship("Client", back_populates="events")
     support_contact = relationship("User", back_populates="events")
+
+    @property
+    def duration_hours(self):
+        return (self.end_date - self.start_date).total_seconds() / 3600
 
     HEADERS = (
         "id",

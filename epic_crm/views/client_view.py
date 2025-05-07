@@ -1,7 +1,6 @@
 import click
 from controllers.crud_controller import ClientsManager
 from controllers.utils import get_manager
-from controllers.authentication import get_current_user_token_payload
 from models.clients import Client
 
 
@@ -19,7 +18,6 @@ def client():
 def create(full_name, email, phone, company_name):
     manager, session = get_manager(ClientsManager)
     try:
-        user_id = get_current_user_token_payload()["user_id"]
         client = manager.create(email=email, full_name=full_name, phone=phone, enterprise=company_name)
         click.secho(f"Client {client.full_name} créé (ID: {client.id})", fg="green")
     except Exception as e:

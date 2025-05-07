@@ -29,10 +29,11 @@ def create(name, start_date, end_date, location, attendees, notes, contract_id, 
         end_dt = datetime.fromisoformat(end_date)
 
         event = manager.create(
+            event_name=name,
             start_date=start_dt,
             end_date=end_dt,
             location=location,
-            attendees_count=attendees,
+            attendees=attendees,
             notes=notes,
             contract_id=contract_id,
             support_contact_id=support_id,
@@ -101,7 +102,7 @@ def update(event_id, location, attendees, notes, support_id):
         if location:
             values["location"] = location
         if attendees:
-            values["attendees_count"] = attendees
+            values["attendees"] = attendees
         if notes:
             values["notes"] = notes
         if support_id:

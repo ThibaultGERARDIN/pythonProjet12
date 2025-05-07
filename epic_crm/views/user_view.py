@@ -1,4 +1,5 @@
 import click
+import os
 from controllers.authentication import get_current_user_token_payload
 from controllers.crud_controller import UserManager
 from controllers.utils import get_manager
@@ -41,6 +42,17 @@ def login(email, password, save_token):
             click.secho("Token sauvegardé dans .token", fg="yellow")
     else:
         click.secho(f"{token_or_msg}", fg="red")
+
+
+@click.command()
+def logout():
+    """Supprime le fichier de token JWT local."""
+
+    if os.path.exists(".token"):
+        os.remove(".token")
+        click.secho("Déconnecté avec succès. Token supprimé.", fg="green")
+    else:
+        click.secho("Aucun token trouvé.", fg="yellow")
 
 
 @click.command()

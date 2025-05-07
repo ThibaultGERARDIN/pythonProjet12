@@ -2,7 +2,6 @@ import click
 from controllers.crud_controller import UserManager
 from controllers.database_controller import SessionLocal
 from controllers.authentication import require_master_password
-from models.users import Department
 from controllers.database_controller import engine
 from models.base import Base
 from models.users import User

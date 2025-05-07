@@ -41,10 +41,7 @@ class Contract(Base):
         nullable=False,
     )
 
-    client = relationship(
-        "Client",
-        cascade="all,delete",
-    )
+    client = relationship("Client", back_populates="contracts")
 
     sales_contact = relationship(
         "User",
@@ -52,6 +49,10 @@ class Contract(Base):
     )
 
     events = relationship("Event", back_populates="contract", cascade="all, delete-orphan")
+
+    @property
+    def is_fully_paid(self):
+        return self.to_be_paid == 0
 
     HEADERS = (
         "id",
