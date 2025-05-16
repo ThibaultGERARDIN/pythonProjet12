@@ -10,8 +10,6 @@ from models.users import Department
 from models.clients import Client
 from models.contracts import Contract
 from models.events import Event
-
-# -- Chargement des variables d'environnement
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -142,5 +140,3 @@ def test_full_flow(test_db_session, setup_database, patch_permission_sessionloca
             phone="0999999999",
             enterprise="HackCorp",
         )
-
-

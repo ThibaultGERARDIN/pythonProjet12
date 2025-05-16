@@ -18,9 +18,9 @@ def event():
 @click.option("--attendees", prompt="Nombre de participants", type=int)
 @click.option("--notes", prompt="Notes")
 @click.option("--contract-id", prompt="ID du contrat", type=int)
-@click.option("--support-id", prompt="ID du collaborateur support", type=int)
+@click.option("--support-id", type=int, required=False)
 def create(name, start_date, end_date, location, attendees, notes, contract_id, support_id):
-    """Créer un événement (réservé aux commerciaux)"""
+    """Créer un événement (réservé aux commerciaux). Le support est facultatif."""
     manager, session = get_manager(EventsManager)
     try:
         from datetime import datetime
@@ -28,17 +28,19 @@ def create(name, start_date, end_date, location, attendees, notes, contract_id, 
         start_dt = datetime.fromisoformat(start_date)
         end_dt = datetime.fromisoformat(end_date)
 
-        event = manager.create(
-            event_name=name,
-            start_date=start_dt,
-            end_date=end_dt,
-            location=location,
-            attendees=attendees,
-            notes=notes,
-            contract_id=contract_id,
-            support_contact_id=support_id,
-        )
-        # Nom facultatif dans le modèle : on le gère à part
+        kwargs = {
+            "event_name": name,
+            "start_date": start_dt,
+            "end_date": end_dt,
+            "location": location,
+            "attendees": attendees,
+            "notes": notes,
+            "contract_id": contract_id,
+        }
+        if support_id is not None:
+            kwargs["support_contact_id"] = support_id
+
+        event = manager.create(**kwargs)
         event.event_name = name
         session.commit()
 

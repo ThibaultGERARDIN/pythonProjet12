@@ -32,7 +32,7 @@ class Event(Base):
     support_contact_id = Column(
         Integer,
         ForeignKey("users.id", ondelete="CASCADE"),
-        nullable=False,
+        nullable=True,
     )
 
     contract = relationship("Contract", back_populates="events")

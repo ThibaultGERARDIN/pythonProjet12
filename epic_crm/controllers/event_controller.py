@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 from controllers.permissions import permission_required
 from controllers.base_controller import BaseManager
 from controllers.cascade_controller import CascadeDetails
@@ -22,25 +22,27 @@ class EventsManager(BaseManager):
     def create(
         self,
         event_name: str,
-        start_date=datetime,
-        end_date=datetime,
-        location=str,
-        attendees=int,
-        notes=str,
-        contract_id=int,
-        support_contact_id=int,
-    ):
+        start_date: datetime,
+        end_date: datetime,
+        location: str,
+        attendees: int,
+        notes: str,
+        contract_id: int,
+        support_contact_id: Optional[int] = None,
+    ) -> Event:
 
-        support_user = self._session.get(User, support_contact_id)
-        utils.check_user_role(support_user, Department.SUPPORT)
+        if support_contact_id is not None:
+            support_user = self._session.get(User, support_contact_id)
+            if not support_user:
+                raise ValueError("Support user not found.")
+            utils.check_user_role(support_user, Department.SUPPORT)
 
-        # Récupérer le contrat
         contract = self._session.get(Contract, contract_id)
         if not contract or not contract.is_signed:
             raise ValueError("Contract must exist and be signed.")
 
         client_id = contract.client_id
-        # Vérifier que le client appartient au sales actuel
+
         user = self.get_authenticated_user()
         if contract.sales_contact_id != user.id:
             raise PermissionError("Permission denied: not your contract.")
