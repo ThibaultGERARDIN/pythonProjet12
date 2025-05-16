@@ -1,7 +1,7 @@
 import click
 import os
-from controllers.authentication import get_current_user_token_payload
-from controllers.crud_controller import UserManager
+from controllers.authentication import get_current_user_token_payload, authenticate_user
+from controllers.user_controller import UserManager
 from controllers.utils import get_manager
 from models.users import Department
 
@@ -30,7 +30,6 @@ def create_user_cmd(firstname, lastname, email, password, role):
 @click.option("--password", prompt=True, hide_input=True)
 @click.option("--save-token/--no-save-token", default=True, help="Sauvegarder le token dans .token (activé par défaut)")
 def login(email, password, save_token):
-    from controllers.authentication import authenticate_user
 
     success, token_or_msg = authenticate_user(email, password)
     if success:
@@ -63,3 +62,17 @@ def current_user():
         click.echo(f"Connecté en tant que {user['email']} ({user['role']})")
     except ValueError as e:
         click.secho(f"{str(e)}", fg="red")
+
+
+@click.command(name="list-users")
+def list_users():
+    """Affiche tous les utilisateurs du système."""
+    manager, session = get_manager(UserManager)
+    try:
+        users = manager.get_all()
+        for u in users:
+            click.echo(f"[{u.id}] {u.full_name} - {u.email} ({u.role.name})")
+    except Exception as e:
+        click.secho(str(e), fg="red")
+    finally:
+        session.close()

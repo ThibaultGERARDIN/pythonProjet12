@@ -1,8 +1,7 @@
-import sqlalchemy
 from sqlalchemy.orm import Session
 from typing import List
 
-from controllers import authentication as auth
+from controllers.authentication import get_current_user_token_payload
 from models.users import User, Department
 from controllers.database_controller import SessionLocal
 
@@ -10,7 +9,7 @@ from controllers.database_controller import SessionLocal
 def resolve_permission(roles: List[Department], function, *args, **kwargs):
     REJECT_MESSAGE = f"Permission denied. Please login as [{' | '.join(role.name for role in roles)}]"
 
-    user_id = auth.get_current_user_token_payload()["user_id"]
+    user_id = get_current_user_token_payload()["user_id"]
 
     session: Session = SessionLocal()
     try:

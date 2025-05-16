@@ -1,7 +1,8 @@
 import click
 from controllers.database_controller import engine
+from sentry_sdk import capture_exception
 from models.base import Base
-from views.user_view import create_user_cmd, login, current_user, logout
+from views.user_view import create_user_cmd, login, current_user, logout, list_users
 from views.client_view import client
 from views.contract_view import contract
 from views.event_view import event
@@ -18,6 +19,7 @@ cli.add_command(create_user_cmd, name="create-user")
 cli.add_command(login)
 cli.add_command(logout)
 cli.add_command(current_user)
+cli.add_command(list_users)
 cli.add_command(client)
 cli.add_command(contract)
 cli.add_command(event)
@@ -34,4 +36,15 @@ def init_db():
 
 
 if __name__ == "__main__":
-    cli()
+    try:
+        cli()
+
+    except PermissionError as e:
+        click.echo(e)
+
+    except ValueError as e:
+        click.echo(e)
+
+    except Exception as e:
+        capture_exception(e)
+        raise e

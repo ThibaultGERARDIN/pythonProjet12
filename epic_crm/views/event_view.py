@@ -1,5 +1,5 @@
 import click
-from controllers.crud_controller import EventsManager
+from controllers.event_controller import EventsManager
 from controllers.utils import get_manager
 from models.events import Event
 

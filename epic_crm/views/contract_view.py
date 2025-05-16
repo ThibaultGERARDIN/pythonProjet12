@@ -1,5 +1,5 @@
 import click
-from controllers.crud_controller import ContractsManager
+from controllers.contract_controller import ContractsManager
 from controllers.utils import get_manager
 from models.contracts import Contract
 

@@ -1,8 +1,7 @@
 import click
-from controllers.crud_controller import UserManager
-from controllers.database_controller import SessionLocal
+from controllers.user_controller import UserManager
+from controllers.database_controller import SessionLocal, engine
 from controllers.authentication import require_master_password
-from controllers.database_controller import engine
 from models.base import Base
 from models.users import User
 

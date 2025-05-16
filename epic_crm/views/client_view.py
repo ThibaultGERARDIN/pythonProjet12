@@ -1,5 +1,5 @@
 import click
-from controllers.crud_controller import ClientsManager
+from controllers.client_controller import ClientsManager
 from controllers.utils import get_manager
 from models.clients import Client
 

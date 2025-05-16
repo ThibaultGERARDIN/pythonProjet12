@@ -59,7 +59,7 @@ def authenticate_user(email, password):
     try:
         user = db.query(User).filter_by(email=email).first()
         if user and verify_password(password, user.hashed_password):
-            token = create_access_token({"user_id": user.id, "email": user.email, "role": user.role.name})
+            token = create_access_token({"user_id": user.id, "role": user.role.name})
             return True, token
         else:
             return False, "Email ou mot de passe incorrect."
@@ -70,7 +70,7 @@ def authenticate_user(email, password):
 def get_current_user_token_payload():
     """
     Payload returned :
-    {"user_id": user.id, "email": user.email, "role": user.role.name}
+    {"user_id": user.id, "role": user.role.name, "exp": expiration}
     """
     try:
         with open(".token", "r") as f:
