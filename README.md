@@ -37,7 +37,6 @@ Avant de commencer, assurez-vous d’avoir installé :
 
 ```bash
 git clone <https://github.com/ThibaultGERARDIN/pythonProjet12.git>
-cd epic-events-crm
 ```
 Renommer le dossier "pythonProjet12" en "epic-events-crm" (ou autre suivant votre préférence)
 
@@ -75,12 +74,12 @@ pip install -r requirements.txt
 ## Configuration de la base de données
 
 Lancer MySQL et créer la base de données et l'utilisateur associé :
-
+(remplacer 'username' et 'password' par ce que vous voulez)
 
 ```sql
 CREATE DATABASE epic_crm;
-CREATE USER 'epic_admin'@'localhost' IDENTIFIED BY 'epic_admin_password';
-GRANT ALL PRIVILEGES ON epic_crm.* TO 'epic_admin'@'localhost';
+CREATE USER 'username'@'localhost' IDENTIFIED BY 'password';
+GRANT ALL PRIVILEGES ON epic_crm.* TO 'username'@'localhost';
 FLUSH PRIVILEGES;
 ```
 
@@ -89,10 +88,11 @@ FLUSH PRIVILEGES;
 ## Variables d’environnement
 
 Créer un fichier `.env` à la racine du projet :
-
+(remplacer username et password par ceux créés dans MySQL ci-dessus)
+(remplacer également la clé secrete, la clé sentry et master password)
 ```env
-DATABASE_USER=epic_admin
-DATABASE_PWD=epic_admin_password
+DATABASE_USER=username
+DATABASE_PWD=password
 SECRET_KEY=cle_super_secrete
 SENTRY_KEY="your_sentry_DSN_key"
 MASTER_PASSWORD=mot_de_passe_admin
