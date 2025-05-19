@@ -11,7 +11,12 @@ from views.admin_view import create_admin, reset_db, delete_users
 
 @click.group()
 def cli():
-    """CLI pour le CRM d’Epic Events."""
+    """
+    CLI tool for Epic Events CRM.
+
+    Allows user and admin operations such as authentication, client management,
+    contract handling, event scheduling, and database operations.
+    """
     pass
 
 
@@ -30,7 +35,11 @@ cli.add_command(create_admin)
 
 @cli.command()
 def init_db():
-    """Initialise la base de données."""
+    """
+    Initialize the MySQL database schema.
+
+    This command creates all tables defined in the SQLAlchemy models.
+    """
     Base.metadata.create_all(bind=engine)
     click.echo("Base de données MySQL initialisée avec succès.")
 
@@ -40,11 +49,12 @@ if __name__ == "__main__":
         cli()
 
     except PermissionError as e:
-        click.echo(e)
+        click.secho(f"Permission error: {e}", fg="red")
 
     except ValueError as e:
-        click.echo(e)
+        click.secho(f"Input error: {e}", fg="red")
 
     except Exception as e:
         capture_exception(e)
+        click.secho(f"Unexpected error occurred: {e}", fg="red")
         raise e

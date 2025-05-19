@@ -6,7 +6,12 @@ from models.contracts import Contract
 
 @click.group()
 def contract():
-    """Commandes de gestion des contrats."""
+    """
+    Contract management command group.
+
+    This group provides subcommands to manage client contracts, including
+    creation, listing, updating, and deletion operations.
+    """
     pass
 
 
@@ -16,6 +21,16 @@ def contract():
 @click.option("--amount-remaining", prompt=True, type=float)
 @click.option("--is-signed", type=bool, prompt="Contrat signé ? (True/False)")
 def create(client_id, amount_total, amount_remaining, is_signed):
+    """
+    Create a new contract for a client.
+
+    Requires client ID and contract details such as total amount, remaining
+    amount, and signature status. Only authorized users can create contracts
+    for their assigned clients.
+
+    Raises:
+        Exception: If the client is not found or not assigned to the current user.
+    """
     manager, session = get_manager(ContractsManager)
     try:
         contract = manager.create(client_id, amount_total, amount_remaining, is_signed)
@@ -28,6 +43,12 @@ def create(client_id, amount_total, amount_remaining, is_signed):
 
 @contract.command()
 def list():
+    """
+    List all contracts in the system.
+
+    Displays contract ID, client ID, total amount, and signature status
+    for each contract accessible to the authenticated user.
+    """
     manager, session = get_manager(ContractsManager)
     try:
         contracts = manager.get_all()
@@ -45,6 +66,18 @@ def list():
 @click.option("--amount-remaining", type=float, default=None)
 @click.option("--is-signed", type=bool, default=None)
 def update(contract_id, amount_total, amount_remaining, is_signed):
+    """
+    Update a contract's details.
+
+    Allows modifying the total amount, remaining balance, and signature status.
+    Sales users can only update contracts they are responsible for.
+
+    Args:
+        contract_id (int): ID of the contract to be updated.
+
+    Raises:
+        Exception: If the update is unauthorized or fails.
+    """
     manager, session = get_manager(ContractsManager)
     try:
         manager.update(
@@ -60,6 +93,15 @@ def update(contract_id, amount_total, amount_remaining, is_signed):
 @contract.command()
 @click.option("--contract-id", prompt="ID du contrat")
 def delete(contract_id):
+    """
+    Delete a contract.
+
+    Removes the specified contract if the authenticated user has permission.
+    Sales users may only delete contracts they own.
+
+    Args:
+        contract_id (int): ID of the contract to delete.
+    """
     manager, session = get_manager(ContractsManager)
     try:
         manager.delete(Contract.id == int(contract_id))

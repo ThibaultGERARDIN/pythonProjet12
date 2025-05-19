@@ -12,6 +12,36 @@ from sqlalchemy import (
 
 
 class Contract(Base):
+    """
+    ORM model representing a contract between a client and the company.
+
+    A contract is linked to a client and assigned to a sales representative.
+    It tracks the total value, remaining balance, signature status, and is related to any events
+    organized under its scope.
+
+    Attributes:
+        id (int): Primary key, auto-incremented.
+        total_amount (float): Total value of the contract in euros.
+        to_be_paid (float): Remaining amount to be paid.
+        creation_date (datetime): Timestamp of when the contract was created (automatically set).
+        last_update (datetime): Timestamp of last update (automatically set on modification).
+        is_signed (bool): Indicates whether the contract has been signed.
+        client_id (int): Foreign key referencing the associated client (required).
+        sales_contact_id (int): Foreign key referencing the responsible sales representative (required).
+        client (Client): SQLAlchemy relationship to the associated client.
+        sales_contact (User): SQLAlchemy relationship to the sales contact.
+        events (List[Event]): Events related to this contract. Deleting the contract removes related events.
+
+    Properties:
+        is_fully_paid (bool): Returns True if the remaining amount to be paid is zero.
+
+    Constants:
+        HEADERS (Tuple[str]): List of field names used for tabular export.
+
+    Methods:
+        to_list(): Returns the contract’s data as a tuple, suitable for tabular display or export.
+    """
+
     __tablename__ = "contracts"
 
     id = Column(Integer, primary_key=True, autoincrement=True)

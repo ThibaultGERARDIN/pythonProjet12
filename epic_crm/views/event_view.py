@@ -6,7 +6,12 @@ from models.events import Event
 
 @click.group()
 def event():
-    """Commandes de gestion des événements."""
+    """
+    Event management command group.
+
+    Provides commands to create, list, update, and delete events.
+    Supports role-based access for sales and support departments.
+    """
     pass
 
 
@@ -20,7 +25,16 @@ def event():
 @click.option("--contract-id", prompt="ID du contrat", type=int)
 @click.option("--support-id", type=int, required=False)
 def create(name, start_date, end_date, location, attendees, notes, contract_id, support_id):
-    """Créer un événement (réservé aux commerciaux). Le support est facultatif."""
+    """
+    Create a new event (Sales only).
+
+    Required information includes the event name, date/time, location,
+    attendees, notes, and the associated contract. Assigning a support
+    user is optional.
+
+    Raises:
+        Exception: If any validation or permission check fails.
+    """
     manager, session = get_manager(EventsManager)
     try:
         from datetime import datetime
@@ -53,7 +67,12 @@ def create(name, start_date, end_date, location, attendees, notes, contract_id, 
 
 @event.command()
 def list():
-    """Lister tous les événements (pour les autorisés)"""
+    """
+    List all events (accessible to authorized users).
+
+    Displays each event's ID, name, start date, location, contract ID,
+    and assigned support contact (if any).
+    """
     manager, session = get_manager(EventsManager)
     try:
         events = manager.get_all()
@@ -68,7 +87,12 @@ def list():
 
 @event.command(name="list-unassigned")
 def list_unassigned():
-    """Lister les événements sans support assigné (gestion uniquement)"""
+    """
+    List events without an assigned support user (Management only).
+
+    Useful for support managers to view unassigned tasks and delegate
+    accordingly.
+    """
     manager, session = get_manager(EventsManager)
     try:
         events = manager.get_unassigned_support_events()
@@ -80,7 +104,11 @@ def list_unassigned():
 
 @event.command(name="list-my")
 def list_my_events():
-    """Lister les événements dont je suis responsable (support uniquement)"""
+    """
+    List events assigned to the authenticated support user.
+
+    Only available to users with the SUPPORT role.
+    """
     manager, session = get_manager(EventsManager)
     try:
         events = manager.get_my_events()
@@ -97,7 +125,17 @@ def list_my_events():
 @click.option("--notes", default=None)
 @click.option("--support-id", type=int, default=None)
 def update(event_id, location, attendees, notes, support_id):
-    """Modifier un événement (support ou gestion selon les droits)"""
+    """
+    Update an event's details.
+
+    Allows updating the location, attendees count, notes, or support contact.
+    Permissions depend on user role:
+    - SUPPORT users can update only their own events.
+    - ACCOUNTING can update all events.
+
+    Raises:
+        Exception: If the user lacks permission or inputs are invalid.
+    """
     manager, session = get_manager(EventsManager)
     try:
         values = {}
@@ -121,7 +159,15 @@ def update(event_id, location, attendees, notes, support_id):
 @event.command()
 @click.option("--event-id", prompt="ID de l'événement")
 def delete(event_id):
-    """Supprimer un événement (selon les permissions)"""
+    """
+    Delete an event (requires proper permissions).
+
+    Only support staff can delete their own events. ACCOUNTING can delete
+    any event.
+
+    Raises:
+        Exception: If unauthorized or deletion fails.
+    """
     manager, session = get_manager(EventsManager)
     try:
         manager.delete(Event.id == int(event_id))

@@ -6,7 +6,12 @@ from models.clients import Client
 
 @click.group()
 def client():
-    """Commandes de gestion des clients."""
+    """
+    Client management command group.
+
+    This command group contains subcommands to manage clients, including
+    creation, listing, updating, and deletion operations.
+    """
     pass
 
 
@@ -16,6 +21,16 @@ def client():
 @click.option("--phone", prompt=True)
 @click.option("--company-name", prompt=True)
 def create(full_name, email, phone, company_name):
+    """
+    Create a new client.
+
+    Prompts the user to enter client information such as full name, email,
+    phone number, and company name. The client will be assigned to the
+    currently authenticated sales user.
+
+    Raises:
+        Exception: If client creation fails (e.g., validation or permission issues).
+    """
     manager, session = get_manager(ClientsManager)
     try:
         client = manager.create(email=email, full_name=full_name, phone=phone, enterprise=company_name)
@@ -28,6 +43,12 @@ def create(full_name, email, phone, company_name):
 
 @client.command()
 def list():
+    """
+    List all clients.
+
+    Displays a summary of all clients registered in the system,
+    including their ID, name, email, and associated company.
+    """
     manager, session = get_manager(ClientsManager)
     try:
         clients = manager.get_all()
@@ -43,6 +64,18 @@ def list():
 @click.option("--phone", default=None)
 @click.option("--company-name", default=None)
 def update(client_id, email, phone, company_name):
+    """
+    Update a client's information.
+
+    Allows updating selected fields (email, phone, or company name) for a given client.
+    Only the sales user responsible for the client is authorized to perform the update.
+
+    Args:
+        client_id (int): The ID of the client to update.
+
+    Raises:
+        Exception: If the update fails due to permissions or invalid input.
+    """
     manager, session = get_manager(ClientsManager)
     try:
         manager.update(Client.id == int(client_id), email=email, phone=phone, enterprise=company_name)
@@ -56,6 +89,15 @@ def update(client_id, email, phone, company_name):
 @client.command()
 @click.option("--client-id", prompt="ID du client")
 def delete(client_id):
+    """
+    Delete a client.
+
+    Removes the client with the specified ID from the system. This operation
+    may trigger a cascade deletion of related data, depending on database constraints.
+
+    Args:
+        client_id (int): The ID of the client to delete.
+    """
     manager, session = get_manager(ClientsManager)
     try:
         manager.delete(Client.id == int(client_id))

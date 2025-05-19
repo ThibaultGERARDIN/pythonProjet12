@@ -11,6 +11,35 @@ class Department(enum.Enum):
 
 
 class User(Base):
+    """
+    ORM model representing a system user.
+
+    A user can belong to one of the departments: SALES, ACCOUNTING, or SUPPORT.
+    Depending on their role, users may manage clients, sign contracts, or support events.
+
+    Attributes:
+        id (int): Primary key, auto-incremented.
+        first_name (str): First name of the user (required).
+        last_name (str): Last name of the user (required).
+        email (str): Unique email address used for login (required).
+        hashed_password (str): Hashed password for authentication (required).
+        role (Department): Enum representing the user's department/role (required).
+
+    Relationships:
+        clients (List[Client]): Clients managed by the user (if role is SALES).
+        contracts (List[Contract]): Contracts created by or assigned to the user (if role is SALES).
+        events (List[Event]): Events supported by the user (if role is SUPPORT).
+
+    Constants:
+        HEADERS (List[str]): Column headers used for exporting user data in tabular format.
+
+    Properties:
+        full_name (str): Concatenated first and last name of the user.
+
+    Methods:
+        to_list(): Returns a tuple representation of the user for display or export purposes.
+    """
+
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, autoincrement=True)

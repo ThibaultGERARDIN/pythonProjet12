@@ -12,10 +12,17 @@ from models.events import Event
 
 class EventsManager(BaseManager):
     """
-    Manage the access to ``Event`` table.
+    Manage the access to the ``Event`` table and implement business logic
+    specific to event creation, update, and deletion based on user roles.
     """
 
     def __init__(self, session: Session) -> None:
+        """
+        Initialize the EventsManager with a SQLAlchemy session.
+
+        Args:
+            session (Session): SQLAlchemy session object.
+        """
         super().__init__(session=session, model=Event)
 
     @permission_required([Department.SALES])
@@ -30,6 +37,31 @@ class EventsManager(BaseManager):
         contract_id: int,
         support_contact_id: Optional[int] = None,
     ) -> Event:
+        """
+        Create a new event. Only sales users are authorized.
+
+        Validates that:
+        - The contract exists and is signed.
+        - The current user is the contract's sales contact.
+        - If a support contact is provided, their role must be SUPPORT.
+
+        Args:
+            event_name (str): Name of the event.
+            start_date (datetime): Event start date.
+            end_date (datetime): Event end date.
+            location (str): Location of the event.
+            attendees (int): Number of attendees.
+            notes (str): Optional notes.
+            contract_id (int): Associated contract ID.
+            support_contact_id (Optional[int]): Assigned support user ID.
+
+        Returns:
+            Event: The created event instance.
+
+        Raises:
+            ValueError: If contract or support user is invalid.
+            PermissionError: If the contract is not assigned to the current user.
+        """
 
         if support_contact_id is not None:
             support_user = self._session.get(User, support_contact_id)
@@ -63,22 +95,67 @@ class EventsManager(BaseManager):
 
     @permission_required(roles=Department)
     def get(self, where_clause) -> List[Event]:
+        """
+        Retrieve a list of events matching a specific condition.
+
+        Args:
+            where_clause: SQLAlchemy where clause for filtering.
+
+        Returns:
+            List[Event]: A list of matching event instances.
+        """
         return super().get(where_clause)
 
     @permission_required(roles=Department)
     def get_all(self) -> List[Event]:
+        """
+        Retrieve all events in the system.
+
+        Returns:
+            List[Event]: All event records.
+        """
         return super().get_all()
 
     @permission_required([Department.SUPPORT])
     def get_my_events(self) -> List[Event]:
+        """
+        Retrieve all events assigned to the currently authenticated support user.
+
+        Returns:
+            List[Event]: Events where the current user is the support contact.
+        """
         user = self.get_authenticated_user()
         return self.get(Event.support_contact_id == user.id)
 
     def get_unassigned_support_events(self) -> List[Event]:
+        """
+        Retrieve all events that currently have no support contact assigned.
+
+        Returns:
+            List[Event]: Events with `support_contact_id` set to None.
+        """
         return self.get(Event.support_contact_id is None)
 
     @permission_required([Department.ACCOUNTING, Department.SUPPORT])
     def update(self, where_clause, **values):
+        """
+        Update event attributes based on filtering criteria.
+
+        Restrictions:
+        - SUPPORT users may only update events they are assigned to.
+        - If `support_contact_id` is provided, it must reference a SUPPORT user.
+
+        Args:
+            where_clause: SQLAlchemy where clause to match events.
+            **values: Fields to update.
+
+        Returns:
+            None
+
+        Raises:
+            PermissionError: If SUPPORT user tries to update an event not assigned to them.
+            ValueError: If new support contact is invalid.
+        """
 
         user = self.get_authenticated_user()
         accessed_objects = self.get(where_clause)
@@ -96,6 +173,21 @@ class EventsManager(BaseManager):
 
     @permission_required([Department.ACCOUNTING, Department.SUPPORT])
     def delete(self, where_clause):
+        """
+        Delete one or more events based on a filter condition.
+
+        Restrictions:
+        - SUPPORT users may only delete events they are assigned to.
+
+        Args:
+            where_clause: SQLAlchemy where clause to filter deletions.
+
+        Returns:
+            None
+
+        Raises:
+            PermissionError: If SUPPORT user tries to delete events not assigned to them.
+        """
 
         user = self.get_authenticated_user()
         accessed_objects = self.get(where_clause)
@@ -109,4 +201,13 @@ class EventsManager(BaseManager):
         return super().delete(where_clause)
 
     def resolve_cascade(self, events: List[Event]) -> List[CascadeDetails]:
+        """
+        Build and return cascade details for a list of events.
+
+        Args:
+            events (List[Event]): List of event instances.
+
+        Returns:
+            List[CascadeDetails]: A list containing cascade detail objects for the given events.
+        """
         return [CascadeDetails(title="EVENTS", headers=Event.HEADERS, objects=events)]
