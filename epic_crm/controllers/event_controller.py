@@ -134,7 +134,7 @@ class EventsManager(BaseManager):
         Returns:
             List[Event]: Events with `support_contact_id` set to None.
         """
-        return self.get(Event.support_contact_id is None)
+        return self.get(Event.support_contact_id.is_(None))
 
     @permission_required([Department.ACCOUNTING, Department.SUPPORT])
     def update(self, where_clause, **values):

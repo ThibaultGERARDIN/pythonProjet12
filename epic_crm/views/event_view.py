@@ -23,7 +23,13 @@ def event():
 @click.option("--attendees", prompt="Nombre de participants", type=int)
 @click.option("--notes", prompt="Notes")
 @click.option("--contract-id", prompt="ID du contrat", type=int)
-@click.option("--support-id", type=int, required=False)
+@click.option(
+    "--support-id",
+    prompt="ID du support (laisser vide si aucun)",
+    default="",
+    show_default=False,
+    callback=lambda ctx, param, value: int(value) if value else None,
+)
 def create(name, start_date, end_date, location, attendees, notes, contract_id, support_id):
     """
     Create a new event (Sales only).
@@ -138,15 +144,19 @@ def update(event_id, location, attendees, notes, support_id):
     """
     manager, session = get_manager(EventsManager)
     try:
-        values = {}
-        if location:
-            values["location"] = location
-        if attendees:
-            values["attendees"] = attendees
-        if notes:
-            values["notes"] = notes
-        if support_id:
-            values["support_contact_id"] = support_id
+        # Rassembler les champs de mise à jour, en filtrant ceux à None
+        values = {
+            "location": location,
+            "attendees": attendees,
+            "notes": notes,
+            "support_contact_id": support_id,
+        }
+        # Nettoyer les champs non fournis
+        values = {k: v for k, v in values.items() if v is not None}
+
+        if not values:
+            click.secho("Aucune donnée à mettre à jour.", fg="yellow")
+            return
 
         manager.update(Event.id == int(event_id), **values)
         click.secho("Événement mis à jour avec succès.", fg="green")

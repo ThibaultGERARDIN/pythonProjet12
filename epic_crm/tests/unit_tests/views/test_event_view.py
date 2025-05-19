@@ -98,27 +98,57 @@ def test_list_my_events(runner):
         assert "[4] Support Event - 2025-10-10 à Bordeaux" in result.output
 
 
-def test_update_event_success(runner):
+def test_update_event_success():
+    runner = CliRunner()
     with patch("epic_crm.views.event_view.get_manager") as mock_get_manager:
         mock_manager = MagicMock()
         mock_session = MagicMock()
         mock_get_manager.return_value = (mock_manager, mock_session)
 
-        result = runner.invoke(event_view.update, input="5\nMarseille\n100\nNouvelles notes\n3\n")
+        result = runner.invoke(
+            event_view.update,
+            [
+                "--event-id",
+                "5",
+                "--location",
+                "Marseille",
+                "--attendees",
+                "100",
+                "--notes",
+                "Nouvelles notes",
+                "--support-id",
+                "3",
+            ],
+        )
 
+        assert result.exit_code == 0
         assert "Événement mis à jour avec succès." in result.output
         mock_manager.update.assert_called_once()
 
 
-def test_update_event_failure(runner):
+def test_update_event_failure():
+    runner = CliRunner()
     with patch("epic_crm.views.event_view.get_manager") as mock_get_manager:
         mock_manager = MagicMock()
         mock_manager.update.side_effect = Exception("Erreur update")
         mock_session = MagicMock()
         mock_get_manager.return_value = (mock_manager, mock_session)
 
-        result = runner.invoke(event_view.update, input="5\nMarseille\n100\nNouvelles notes\n3\n")
-
+        result = runner.invoke(
+            event_view.update,
+            [
+                "--event-id",
+                "5",
+                "--location",
+                "Marseille",
+                "--attendees",
+                "100",
+                "--notes",
+                "Nouvelles notes",
+                "--support-id",
+                "3",
+            ],
+        )
         assert "Erreur update" in result.output
 
 

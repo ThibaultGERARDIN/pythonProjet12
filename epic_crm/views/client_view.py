@@ -58,6 +58,43 @@ def list():
         session.close()
 
 
+@client.command(name="list-my")
+def get_my_clients():
+    """
+    Liste les clients assignés à l'utilisateur connecté (Sales uniquement).
+    """
+    manager, session = get_manager(ClientsManager)
+    try:
+        clients = manager.get_my_clients()
+        if not clients:
+            click.secho("Aucun client assigné.", fg="yellow")
+        for c in clients:
+            click.echo(f"[{c.id}] {c.full_name} - {c.enterprise} ({c.email})")
+    except Exception as e:
+        click.secho(str(e), fg="red")
+    finally:
+        session.close()
+
+
+@client.command(name="filter-by-name")
+@click.option("--name", prompt="Nom ou partie du nom à rechercher")
+def filter_by_name(name):
+    """
+    Recherche les clients dont le nom contient la chaîne fournie.
+    """
+    manager, session = get_manager(ClientsManager)
+    try:
+        results = manager.filter_by_name(name)
+        if not results:
+            click.secho("Aucun client correspondant.", fg="yellow")
+        for c in results:
+            click.echo(f"[{c.id}] {c.full_name} - {c.enterprise} ({c.email})")
+    except Exception as e:
+        click.secho(str(e), fg="red")
+    finally:
+        session.close()
+
+
 @client.command()
 @click.option("--client-id", prompt="ID du client")
 @click.option("--email", default=None)
