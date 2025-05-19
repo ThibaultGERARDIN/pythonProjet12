@@ -1,6 +1,6 @@
 import click
 import os
-from controllers.authentication import get_current_user_token_payload, authenticate_user
+from controllers.authentication import retrieve_authenticated_user, authenticate_user
 from controllers.user_controller import UserManager
 from controllers.utils import get_manager
 from models.users import Department
@@ -85,9 +85,10 @@ def current_user():
     Raises:
         ValueError: If no valid token is found.
     """
+    manager, session = get_manager(UserManager)
     try:
-        user = get_current_user_token_payload()
-        click.echo(f"Connecté en tant que {user['email']} ({user['role']})")
+        user = retrieve_authenticated_user(session)
+        click.echo(f"Connecté en tant que {user.full_name} ({user.role.name})")
     except ValueError as e:
         click.secho(f"{str(e)}", fg="red")
 

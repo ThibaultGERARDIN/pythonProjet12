@@ -2,6 +2,7 @@ import pytest
 from click.testing import CliRunner
 from unittest.mock import patch, MagicMock
 from epic_crm.views import user_view
+from epic_crm.models.users import User, Department
 
 
 @pytest.fixture
@@ -71,18 +72,28 @@ def test_logout_without_token_file(runner):
         assert "Aucun token trouvé." in result.output
 
 
-def test_current_user_success(runner):
-    mock_payload = {"email": "user@example.com", "role": "SALES"}
+def test_current_user_success(monkeypatch, runner):
+    mock_user = MagicMock()
+    mock_user.full_name = "Jean Dupont"
+    mock_user.role.name = "SALES"
 
-    with patch("epic_crm.views.user_view.get_current_user_token_payload", return_value=mock_payload):
-        result = runner.invoke(user_view.current_user)
-        assert "Connecté en tant que user@example.com (SALES)" in result.output
+    monkeypatch.setattr("epic_crm.views.user_view.retrieve_authenticated_user", lambda session: mock_user)
+
+    result = runner.invoke(user_view.current_user)
+
+    assert "Connecté en tant que Jean Dupont (SALES)" in result.output
 
 
 def test_current_user_no_token(runner):
-    with patch("epic_crm.views.user_view.get_current_user_token_payload", side_effect=ValueError("Token manquant")):
-        result = runner.invoke(user_view.current_user)
-        assert "Token manquant" in result.output
+    with patch("epic_crm.views.user_view.get_manager") as mock_get_manager:
+        mock_manager = None
+        mock_session = None
+        mock_get_manager.return_value = (mock_manager, mock_session)
+
+        with patch("epic_crm.views.user_view.retrieve_authenticated_user", side_effect=ValueError("Token manquant")):
+            result = runner.invoke(user_view.current_user)
+
+    assert "Token manquant" in result.output
 
 
 def test_list_users_success(runner):

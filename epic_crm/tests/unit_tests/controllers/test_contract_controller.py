@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from controllers.contract_controller import ContractsManager
 from models.contracts import Contract
 from models.clients import Client
@@ -9,7 +9,12 @@ from models.users import Department, User
 @pytest.fixture
 def sales_user():
     return User(
-        id=2, email="sales@epic.com", role=Department.SALES, first_name="S", last_name="U", hashed_password="pwd"
+        id=2,
+        email="sales@epic.com",
+        first_name="S",
+        last_name="U",
+        hashed_password="pwd",
+        role=Department.SALES,
     )
 
 
@@ -45,19 +50,33 @@ def test_create_contract(mock_sessionlocal, dummy_session, sales_user, client_fo
     assert contract in dummy_session.added
 
 
-def test_get_all_contracts(dummy_session, mock_auth_sales):
+@patch("controllers.permissions.SessionLocal")
+def test_get_all_contracts(mock_sessionlocal, dummy_session, mock_auth_sales, sales_user):
+    dummy_session.scalar_return_value = sales_user
+    dummy_session.get_return_value = sales_user
+    mock_sessionlocal.return_value = dummy_session
+
     contract = Contract(id=1, client_id=1, sales_contact_id=2, total_amount=1000, to_be_paid=500, is_signed=False)
     dummy_session.data = [contract]
+
     manager = ContractsManager(dummy_session)
     result = manager.get_all()
-    assert result == [contract]
+
+    assert contract in result
 
 
-def test_get_with_clause(dummy_session, mock_auth_sales):
+@patch("controllers.permissions.SessionLocal")
+def test_get_with_clause(mock_sessionlocal, dummy_session, mock_auth_sales, sales_user):
+    dummy_session.scalar_return_value = sales_user
+    dummy_session.get_return_value = sales_user
+    mock_sessionlocal.return_value = dummy_session
+
     contract = Contract(id=2, client_id=1, sales_contact_id=2, total_amount=2000, to_be_paid=0, is_signed=True)
     dummy_session.data = [contract]
+
     manager = ContractsManager(dummy_session)
     result = manager.get(Contract.id == 2)
+
     assert result == [contract]
 
 

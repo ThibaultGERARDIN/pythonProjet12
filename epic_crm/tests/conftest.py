@@ -11,7 +11,7 @@ sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
 
 from models.base import Base
 from controllers.user_controller import UserManager
-from controllers import authentication
+from controllers import authentication, permissions
 
 
 load_dotenv()
@@ -55,6 +55,11 @@ def patch_sessionlocal(monkeypatch, test_db_session):
     à retourner la session de test.
     """
     monkeypatch.setattr(authentication, "SessionLocal", lambda: test_db_session)
+
+
+@pytest.fixture
+def patch_permission_sessionlocal(monkeypatch, test_db_session):
+    monkeypatch.setattr(permissions, "SessionLocal", lambda: test_db_session)
 
 
 @pytest.fixture

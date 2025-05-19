@@ -13,7 +13,7 @@ def sales_user():
 
 
 @patch("controllers.permissions.SessionLocal")
-def test_create_client(mock_sessionlocal, dummy_session, sales_user, token_file):
+def test_create_client(mock_sessionlocal, dummy_session, sales_user, token_file, mock_auth_sales):
     dummy_session.scalar_return_value = sales_user
     dummy_session.get_return_value = sales_user
     mock_sessionlocal.return_value = dummy_session
@@ -38,43 +38,73 @@ def test_create_client(mock_sessionlocal, dummy_session, sales_user, token_file)
     assert client in dummy_session.added
 
 
-def test_get_all_clients(dummy_session, mock_auth_sales):
+@patch("controllers.permissions.SessionLocal")
+def test_get_all_clients(mock_sessionlocal, dummy_session, mock_auth_sales, sales_user):
+    dummy_session.scalar_return_value = sales_user
+    dummy_session.get_return_value = sales_user
+    mock_sessionlocal.return_value = dummy_session
+
     client = Client(email="a@a.com", full_name="A A", phone="0611111111", enterprise="A")
     dummy_session.data = [client]
+
     manager = ClientsManager(dummy_session)
     assert client in manager.get_all()
 
 
-def test_get_clients_with_clause(dummy_session, mock_auth_sales):
+@patch("controllers.permissions.SessionLocal")
+def test_get_clients_with_clause(mock_sessionlocal, dummy_session, mock_auth_sales, sales_user):
+    dummy_session.scalar_return_value = sales_user
+    dummy_session.get_return_value = sales_user
+    mock_sessionlocal.return_value = dummy_session
+
     client = Client(id=1, email="client@corp.com", full_name="Client Corp", phone="0622222222", enterprise="Corp")
     dummy_session.data = [client]
+
     manager = ClientsManager(dummy_session)
     result = manager.get(Client.id == 1)
+
     assert result == [client]
 
 
-def test_update_own_client(dummy_session, mock_auth_sales, sales_user):
+@patch("controllers.permissions.SessionLocal")
+def test_update_own_client(mock_sessionlocal, dummy_session, mock_auth_sales, sales_user):
     dummy_session.scalar_return_value = sales_user
+    dummy_session.get_return_value = sales_user
+    mock_sessionlocal.return_value = dummy_session
 
     client = Client(id=3, sales_contact_id=2)
     dummy_session.data = [client]
+
     manager = ClientsManager(dummy_session)
     manager.update(Client.id == 3, phone="0601234567")
 
     assert len(dummy_session.updated) == 1
 
 
-def test_update_other_sales_client_forbidden(dummy_session, monkeypatch, mock_auth_sales, sales_user):
+@patch("controllers.permissions.SessionLocal")
+def test_update_other_sales_client_forbidden(mock_sessionlocal, dummy_session, mock_auth_sales, sales_user):
     dummy_session.scalar_return_value = sales_user
+    dummy_session.get_return_value = sales_user
+    mock_sessionlocal.return_value = dummy_session
+
     client = Client(id=4, sales_contact_id=99)  # Différent de l’ID user
     dummy_session.data = [client]
-    manager = ClientsManager(dummy_session)
 
+    manager = ClientsManager(dummy_session)
     with pytest.raises(PermissionError):
         manager.update(Client.id == 4, phone="0609876543")
 
 
-def test_delete_client(dummy_session, mock_auth_sales):
+@patch("controllers.permissions.SessionLocal")
+def test_delete_client(mock_sessionlocal, dummy_session, mock_auth_sales, sales_user):
+    dummy_session.scalar_return_value = sales_user
+    dummy_session.get_return_value = sales_user
+    mock_sessionlocal.return_value = dummy_session
+
+    client = Client(id=1, sales_contact_id=2)
+    dummy_session.data = [client]
+
     manager = ClientsManager(dummy_session)
     manager.delete(Client.id == 1)
+
     assert len(dummy_session.updated) == 1
